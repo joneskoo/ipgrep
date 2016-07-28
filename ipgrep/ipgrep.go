@@ -7,7 +7,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 // Grep finds IP addresses matching pattern
@@ -37,7 +36,7 @@ func Grep(r io.Reader, w io.Writer, pattern string) (err error) {
 
 func parseIPNet(word string) (ipnet *net.IPNet) {
 	ipnet = &net.IPNet{}
-	parts := strings.FieldsFunc(word, func(c rune) bool { return unicode.IsSpace(c) || c == '/' || c == 'm' })
+	parts := strings.FieldsFunc(word, func(c rune) bool { return c == '/' || c == 'm' })
 	if parts == nil || len(parts) == 0 || len(parts) > 2 {
 		return nil
 	}
