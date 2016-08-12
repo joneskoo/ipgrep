@@ -1,7 +1,8 @@
 ipgrep
 ======
 
-IPv4 netmask aware grep for firewall scripts etc.
+IPv4/IPv6 CIDR netmask aware grep utility. ipgrep can match both
+log files by CIDR mask or e.g. firewall CIDR masks by IP address.
 
 Usage (with [go installed and GOPATH set][GOPATH]):
 
