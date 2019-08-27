@@ -18,61 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package main
+package ipgrep_test
 
 import (
-	"fmt"
-	"io"
-	"os"
+	"bytes"
+	"strings"
+	"testing"
 
 	"github.com/joneskoo/ipgrep/internal/ipgrep"
 )
 
-func main() {
-	err := run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v: %v\n", name, err)
-		os.Exit(1)
+func TestIpgrep(t *testing.T) {
+	cases := []struct {
+		input   string
+		pattern string
+		want    string
+		err     bool
+	}{
+		{pattern: "127.0.0.1", input: "127.0.0.1\n", want: "127.0.0.1\n"},
+		{pattern: "127.0.0.2", input: "127.0.0.1\n", want: ""},
+		{pattern: "127.0.0.2/24", input: "127.0.0.1\n", want: "127.0.0.1\n"},
+		{pattern: "0.0.0.0/0", input: "127.0.0.1\n", want: "127.0.0.1\n"},
+		{input: "127.0.0.1\n", pattern: "127.0.0.1", want: "127.0.0.1\n"},
+		{input: "127.0.0.2\n", pattern: "127.0.0.1", want: ""},
+		{input: "127.0.0.2/24\n", pattern: "127.0.0.1", want: "127.0.0.2/24\n"},
+		{input: "0.0.0.0/0\n", pattern: "127.0.0.1", want: "0.0.0.0/0\n"},
+		{pattern: "::/0", input: "127.0.0.1\n", want: ""},
+	}
+	for _, c := range cases {
+		r := strings.NewReader(c.input)
+		buf := &bytes.Buffer{}
+		err := ipgrep.Grep(r, buf, c.pattern)
+		if (err != nil) != c.err {
+			t.Errorf("wanted error=%v, got %v", c.err, err)
+		}
+		got := buf.String()
+		if got != c.want {
+			t.Errorf("wanted Grep(%q) to write %q, got %q", c.input, c.want, got)
+		}
 	}
 }
-
-func run() error {
-	output := os.Stdout
-	input, pattern, err := parseArgs(os.Args)
-	if err != nil {
-		return err
-	}
-
-	return ipgrep.Grep(input, output, pattern)
-}
-
-func parseArgs(args []string) (input io.Reader, pattern string, err error) {
-	switch len(os.Args) {
-	// ipgrep CIDR
-	case 1 + 1:
-		input = os.Stdin
-	// ipgrep CIDR FILE
-	case 1 + 2:
-		fileName := os.Args[2]
-		input, err = os.Open(fileName)
-	default:
-		err = fmt.Errorf("%s", usage)
-	}
-	if err != nil {
-		return nil, "", err
-	}
-
-	pattern = args[1]
-
-	return input, pattern, nil
-}
-
-const (
-	name  = "ipgrep"
-	usage = `bad usage
-Usage: ipgrep PATTERN [FILE...]
-
-    E.g. ipgrep 2001:db8::/64 log.txt
-	 ipgrep 127.0.0.1 log.txt
-	 cat log.txt | ipgrep 127.0.0.1`
-)
