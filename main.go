@@ -46,20 +46,30 @@ func run() error {
 	return ipgrep.Grep(input, output, pattern)
 }
 
-func parseArgs(args []string) (input io.Reader, pattern string, err error) {
-	switch len(os.Args) {
+type inputFile struct {
+	name string
+	io.Reader
+}
+
+func parseArgs(args []string) (input inputFile, pattern string, err error) {
+	switch {
 	// ipgrep CIDR
-	case 1 + 1:
-		input = os.Stdin
+	// ipgrep CIDR -
+	case len(args) == 1+1:
+		fallthrough
+	case len(args) == 1+2 && args[2] == "-":
+		input = inputFile{"-", os.Stdin}
 	// ipgrep CIDR FILE
-	case 1 + 2:
-		fileName := os.Args[2]
-		input, err = os.Open(fileName)
+	case len(args) == 1+2:
+		fileName := args[2]
+		var f *os.File
+		f, err = os.Open(fileName)
+		input = inputFile{fileName, f}
 	default:
 		err = fmt.Errorf("%s", usage)
 	}
 	if err != nil {
-		return nil, "", err
+		return inputFile{}, "", err
 	}
 
 	pattern = args[1]
