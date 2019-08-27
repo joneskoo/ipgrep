@@ -73,7 +73,8 @@ type inputFile struct {
 
 const (
 	name  = "ipgrep"
-	usage = `bad usage
+	usage = `not enough arguments
+
 Usage: ipgrep PATTERN [FILE...]
 
     E.g. ipgrep 2001:db8::/64 log.txt
