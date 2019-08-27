@@ -38,43 +38,37 @@ func main() {
 
 func run() error {
 	output := os.Stdout
-	input, pattern, err := parseArgs(os.Args)
-	if err != nil {
-		return err
+
+	args := os.Args[1:]
+	if len(args) < 1 {
+		return fmt.Errorf("%s", usage)
+	}
+	pattern := args[0]
+	if len(args) == 1 {
+		args = append(args, "-")
 	}
 
-	return ipgrep.Grep(input, output, pattern)
+	for _, fileName := range args[1:] {
+		var f *os.File
+		if fileName == "-" {
+			f = os.Stdin
+		} else {
+			var err error
+			f, err = os.Open(fileName)
+			if err != nil {
+				return err
+			}
+		}
+		if err := ipgrep.Grep(f, output, pattern); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type inputFile struct {
 	name string
 	io.Reader
-}
-
-func parseArgs(args []string) (input inputFile, pattern string, err error) {
-	switch {
-	// ipgrep CIDR
-	// ipgrep CIDR -
-	case len(args) == 1+1:
-		fallthrough
-	case len(args) == 1+2 && args[2] == "-":
-		input = inputFile{"-", os.Stdin}
-	// ipgrep CIDR FILE
-	case len(args) == 1+2:
-		fileName := args[2]
-		var f *os.File
-		f, err = os.Open(fileName)
-		input = inputFile{fileName, f}
-	default:
-		err = fmt.Errorf("%s", usage)
-	}
-	if err != nil {
-		return inputFile{}, "", err
-	}
-
-	pattern = args[1]
-
-	return input, pattern, nil
 }
 
 const (
