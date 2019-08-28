@@ -14,6 +14,6 @@ Usage
 Installing
 ------------
 
-    $ go install github.com/joneskoo/ipgrep
+    $ go get github.com/joneskoo/ipgrep
 
 
