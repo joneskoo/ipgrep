@@ -57,7 +57,7 @@ func Grep(r io.Reader, w io.Writer, pattern string) (err error) {
 func parseIPNet(word string) (ipnet *net.IPNet) {
 	ipnet = &net.IPNet{}
 	parts := strings.FieldsFunc(word, func(c rune) bool { return c == '/' || c == 'm' })
-	if parts == nil || len(parts) == 0 || len(parts) > 2 {
+	if len(parts) == 0 || len(parts) > 2 {
 		return nil
 	}
 	if ipnet.IP = net.ParseIP(parts[0]); ipnet.IP == nil {

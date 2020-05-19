@@ -22,7 +22,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/joneskoo/ipgrep"
@@ -64,11 +63,6 @@ func run() error {
 		}
 	}
 	return nil
-}
-
-type inputFile struct {
-	name string
-	io.Reader
 }
 
 const (
