@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/joneskoo/ipgrep/internal/ipgrep"
+	"github.com/joneskoo/ipgrep"
 )
 
 func TestIpgrep(t *testing.T) {
