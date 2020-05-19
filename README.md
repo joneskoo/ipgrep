@@ -10,6 +10,8 @@ configuration with netmasks.
     allow all from 4.3.2.1m255.255.255.0
     deny from 4.3.2.1m31
 
+[![Go](https://github.com/joneskoo/ipgrep/workflows/Go/badge.svg)](https://github.com/joneskoo/ipgrep/actions?query=workflow%3AGo)
+
 Supported formats:
 
  * 1.2.3.4 (plain IPv4)
