@@ -30,31 +30,137 @@ import (
 
 func TestIpgrep(t *testing.T) {
 	cases := []struct {
+		name    string
 		input   string
 		pattern string
 		want    string
 		err     bool
 	}{
-		{pattern: "127.0.0.1", input: "127.0.0.1\n", want: "127.0.0.1\n"},
-		{pattern: "127.0.0.2", input: "127.0.0.1\n", want: ""},
-		{pattern: "127.0.0.2/24", input: "127.0.0.1\n", want: "127.0.0.1\n"},
-		{pattern: "0.0.0.0/0", input: "127.0.0.1\n", want: "127.0.0.1\n"},
-		{input: "127.0.0.1\n", pattern: "127.0.0.1", want: "127.0.0.1\n"},
-		{input: "127.0.0.2\n", pattern: "127.0.0.1", want: ""},
-		{input: "127.0.0.2/24\n", pattern: "127.0.0.1", want: "127.0.0.2/24\n"},
-		{input: "0.0.0.0/0\n", pattern: "127.0.0.1", want: "0.0.0.0/0\n"},
-		{pattern: "::/0", input: "127.0.0.1\n", want: ""},
+		{
+			name:    "match specific IPv4 with CIDR",
+			pattern: "127.0.0.2/24",
+			input:   "127.0.0.1\n",
+			want:    "127.0.0.1\n",
+		},
+		{
+			name:    "match specific IPv4 with all IPv4 CIDR",
+			pattern: "0.0.0.0/0",
+			input:   "127.0.0.1\n",
+			want:    "127.0.0.1\n",
+		},
+		{
+			name:    "no match specific IPv4 with specific",
+			pattern: "127.0.0.2",
+			input:   "127.0.0.1\n",
+			want:    "",
+		},
+
+		{
+			name:    "no match IPv4 with IPv6 CIDR",
+			pattern: "::/0",
+			input:   "127.0.0.1\n",
+			want:    "",
+		},
+
+		{
+			name:    "match all IPv4 CIDR with specific IP",
+			pattern: "127.0.0.1",
+			input:   "0.0.0.0/0\n",
+			want:    "0.0.0.0/0\n",
+		},
+		{
+			name:    "match IPv4 CIDR with specific IP",
+			pattern: "127.0.0.1",
+			input:   "127.0.0.2/24\n",
+			want:    "127.0.0.2/24\n",
+		},
+
+		{
+			name:    "no match IPv4 with specific IPv4",
+			pattern: "1.2.3.5",
+			input:   "1.2.3.4\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv4 CIDR with specific IPv4",
+			pattern: "1.2.2.4",
+			input:   "1.2.3.4/24\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv4 m CIDR with specific IPv4",
+			pattern: "1.2.2.4",
+			input:   "1.2.3.4m24\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv4 m netmask with specific IPv4",
+			pattern: "1.2.2.4",
+			input:   "1.2.3.4m255.255.255.0\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv6 with specific IPv6",
+			pattern: "2001:db8::2",
+			input:   "2001:db8::1\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv6 with specific IPv6",
+			pattern: "2001:db9::2",
+			input:   "2001:db8::1/64\n",
+			want:    "",
+		},
+
+		{
+			name:    "no match IPv4 with specific IPv4",
+			pattern: "1.2.3.4",
+			input:   "1.2.3.4\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv4 CIDR with specific IPv4",
+			pattern: "1.2.3.4",
+			input:   "1.2.3.4/24\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv4 m CIDR with specific IPv4",
+			pattern: "1.2.3.4",
+			input:   "1.2.3.4m24\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv4 m netmask with specific IPv4",
+			pattern: "1.2.3.4",
+			input:   "1.2.3.4m255.255.255.0\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv6 with specific IPv6",
+			pattern: "2001:db8::1",
+			input:   "2001:db8::1\n",
+			want:    "",
+		},
+		{
+			name:    "no match IPv6 with specific IPv6",
+			pattern: "2001:db8::2",
+			input:   "2001:db8::1/64\n",
+			want:    "",
+		},
 	}
 	for _, c := range cases {
-		r := strings.NewReader(c.input)
-		buf := &bytes.Buffer{}
-		err := ipgrep.Grep(r, buf, c.pattern)
-		if (err != nil) != c.err {
-			t.Errorf("wanted error=%v, got %v", c.err, err)
-		}
-		got := buf.String()
-		if got != c.want {
-			t.Errorf("wanted Grep(%q) to write %q, got %q", c.input, c.want, got)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			r := strings.NewReader(c.input)
+			buf := &bytes.Buffer{}
+			err := ipgrep.Grep(r, buf, c.pattern)
+			if (err != nil) != c.err {
+				t.Errorf("wanted error=%v, got %v", c.err, err)
+			}
+			got := buf.String()
+			if got != c.want {
+				t.Errorf("wanted Grep(%q) to write %q, got %q", c.input, c.want, got)
+			}
+		})
 	}
 }
