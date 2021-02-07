@@ -70,14 +70,12 @@ func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
 	// i is position of the separator or end of string if no separator
 	var i int
 	switch {
-	case is < 0 && im < 0:
-		i = len(s)
 	case is >= 0:
 		i = is
 	case im >= 0 && acceptMForMask:
 		i = im
 	default:
-		panic("Unreachable")
+		i = len(s)
 	}
 
 	// Parse IP part of the prefix
