@@ -66,13 +66,16 @@ const (
 
 func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
 	is := strings.IndexByte(s, '/')
-	im := strings.IndexByte(s, 'm')
+	im := -1
+	if acceptMForMask {
+		im = strings.IndexByte(s, 'm')
+	}
 	// i is position of the separator or end of string if no separator
 	var i int
 	switch {
 	case is >= 0:
 		i = is
-	case im >= 0 && acceptMForMask:
+	case im >= 0:
 		i = im
 	default:
 		i = len(s)
