@@ -28,6 +28,7 @@ import (
 	"math/bits"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"inet.af/netaddr"
 )
@@ -45,7 +46,8 @@ func Grep(r io.Reader, w io.Writer, search string) error {
 		if err := lineScanner.Err(); err != nil {
 			return fmt.Errorf("reading standard input: %v", err)
 		}
-		for _, word := range strings.Fields(line) {
+
+		for _, word := range strings.FieldsFunc(line, isDelimiter) {
 			ipp, err := parseIPPrefix(word)
 			if err != nil {
 				continue
@@ -57,6 +59,13 @@ func Grep(r io.Reader, w io.Writer, search string) error {
 		}
 	}
 	return nil
+}
+
+func isDelimiter(r rune) bool {
+	if unicode.IsSpace(r) || r == ',' || r == '"' || r == '\'' {
+		return true
+	}
+	return false
 }
 
 const (

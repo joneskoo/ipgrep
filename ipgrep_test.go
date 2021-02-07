@@ -50,6 +50,30 @@ func TestIpgrep(t *testing.T) {
 			want:    "127.0.0.1\n",
 		},
 		{
+			name:    "match comma separated IPv4 with all IPv4 CIDR",
+			pattern: "0.0.0.0/0",
+			input:   "127.0.0.1,127.0.0.2\n",
+			want:    "127.0.0.1,127.0.0.2\n",
+		},
+		{
+			name:    "match tab separated IPv4 with all IPv4 CIDR",
+			pattern: "0.0.0.0/0",
+			input:   "127.0.0.1\t127.0.0.2\n",
+			want:    "127.0.0.1\t127.0.0.2\n",
+		},
+		{
+			name:    "match quoted IPv4 with all IPv4 CIDR",
+			pattern: "0.0.0.0/0",
+			input:   "\"127.0.0.1\"\n",
+			want:    "\"127.0.0.1\"\n",
+		},
+		{
+			name:    "match single-quoted IPv4 with all IPv4 CIDR",
+			pattern: "0.0.0.0/0",
+			input:   "'127.0.0.1'\n",
+			want:    "'127.0.0.1'\n",
+		},
+		{
 			name:    "no match specific IPv4 with specific",
 			pattern: "127.0.0.2",
 			input:   "127.0.0.1\n",
