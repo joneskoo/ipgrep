@@ -98,10 +98,13 @@ func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
 		return netaddr.IPPrefix{}, fmt.Errorf("bad prefix length %q: %v", s, err)
 	}
 	if err != nil {
-		if !acceptLegacyNetmask {
+		if !acceptLegacyNetmask || !ip.Is4() {
 			return netaddr.IPPrefix{}, fmt.Errorf("bad prefix %q: %v", s, err)
 		}
 		mask, err := netaddr.ParseIP(s)
+		if !mask.Is4() {
+			return netaddr.IPPrefix{}, fmt.Errorf("bad netmask %q", s)
+		}
 		if err != nil {
 			return netaddr.IPPrefix{}, err
 		}
