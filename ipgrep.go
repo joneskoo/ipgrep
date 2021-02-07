@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"math/bits"
+	"strconv"
 	"strings"
 
 	"inet.af/netaddr"
@@ -64,31 +65,48 @@ const (
 )
 
 func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
-	if acceptMForMask {
-		s = strings.Replace(s, "m", "/", 1)
-	}
-	if acceptLegacyNetmask {
-		pos := strings.Index(s, "/")
-		if pos > 0 {
-			mask, err := netaddr.ParseIP(s[pos+1:])
-			if err == nil {
-				maskBytes := mask.As4()
-				bitLen := bits.OnesCount32(binary.BigEndian.Uint32(maskBytes[:]))
-				s = fmt.Sprintf("%s%d", s[:pos+1], bitLen)
-			}
-		}
+	is := strings.IndexByte(s, '/')
+	im := strings.IndexByte(s, 'm')
+	// i is position of the separator or end of string if no separator
+	var i int
+	switch {
+	case is < 0 && im < 0:
+		i = len(s)
+	case is >= 0:
+		i = is
+	case im >= 0 && acceptMForMask:
+		i = im
+	default:
+		panic("Unreachable")
 	}
 
-	prefix, err = netaddr.ParseIPPrefix(s)
+	// Parse IP part of the prefix
+	ip, err := netaddr.ParseIP(s[:i])
 	if err != nil {
-		// Search pattern is a single IP (convert to single IP CIDR)
-		var ip netaddr.IP
-		ip, err = netaddr.ParseIP(s)
-		if err != nil {
-			return prefix, err
-		}
-		// Ignore error: Prefix of BitLen cannot be too large.
-		prefix, _ = ip.Prefix(ip.BitLen())
+		return netaddr.IPPrefix{}, err
 	}
-	return prefix, nil
+
+	// s is a single IP (convert to single IP CIDR)
+	if i == len(s) {
+		return netaddr.IPPrefix{IP: ip, Bits: ip.BitLen()}, nil
+	}
+
+	s = s[i+1:]
+	prefixLen, err := strconv.Atoi(s)
+	if prefixLen < 0 || prefixLen > 128 {
+		return netaddr.IPPrefix{}, fmt.Errorf("bad prefix length %q: %v", s, err)
+	}
+	if err != nil {
+		if !acceptLegacyNetmask {
+			return netaddr.IPPrefix{}, fmt.Errorf("bad prefix %q: %v", s, err)
+		}
+		mask, err := netaddr.ParseIP(s)
+		if err != nil {
+			return netaddr.IPPrefix{}, err
+		}
+		maskBytes := mask.As4()
+		prefixLen = bits.OnesCount32(binary.BigEndian.Uint32(maskBytes[:]))
+
+	}
+	return ip.Prefix(uint8(prefixLen))
 }
