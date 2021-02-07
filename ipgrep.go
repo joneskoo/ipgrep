@@ -22,10 +22,8 @@ package ipgrep
 
 import (
 	"bufio"
-	"encoding/binary"
 	"fmt"
 	"io"
-	"math/bits"
 	"strconv"
 	"strings"
 
@@ -59,25 +57,9 @@ func Grep(r io.Reader, w io.Writer, search string) error {
 	return nil
 }
 
-const (
-	acceptMForMask      = true
-	acceptLegacyNetmask = true
-)
-
 func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
-	is := strings.IndexByte(s, '/')
-	im := -1
-	if acceptMForMask {
-		im = strings.IndexByte(s, 'm')
-	}
-	// i is position of the separator or end of string if no separator
-	var i int
-	switch {
-	case is >= 0:
-		i = is
-	case im >= 0:
-		i = im
-	default:
+	i := strings.IndexByte(s, '/')
+	if i < 0 {
 		i = len(s)
 	}
 
@@ -98,19 +80,7 @@ func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
 		return netaddr.IPPrefix{}, fmt.Errorf("bad prefix length %q: %v", s, err)
 	}
 	if err != nil {
-		if !acceptLegacyNetmask || !ip.Is4() {
-			return netaddr.IPPrefix{}, fmt.Errorf("bad prefix %q: %v", s, err)
-		}
-		mask, err := netaddr.ParseIP(s)
-		if !mask.Is4() {
-			return netaddr.IPPrefix{}, fmt.Errorf("bad netmask %q", s)
-		}
-		if err != nil {
-			return netaddr.IPPrefix{}, err
-		}
-		maskBytes := mask.As4()
-		prefixLen = bits.OnesCount32(binary.BigEndian.Uint32(maskBytes[:]))
-
+		return netaddr.IPPrefix{}, fmt.Errorf("bad prefix %q: %v", s, err)
 	}
 	return ip.Prefix(uint8(prefixLen))
 }
