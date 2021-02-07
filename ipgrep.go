@@ -22,21 +22,22 @@ package ipgrep
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"io"
-	"net"
-	"strconv"
+	"math/bits"
 	"strings"
+
+	"inet.af/netaddr"
 )
 
 // Grep finds IP addresses matching pattern
 // in Reader and writes matching to Writer
-func Grep(r io.Reader, w io.Writer, pattern string) (err error) {
-	p := parseIPNet(pattern)
-	if p == nil {
-		return fmt.Errorf("bad pattern: %v", pattern)
+func Grep(r io.Reader, w io.Writer, search string) error {
+	searchPrefix, err := parseIPPrefix(search)
+	if err != nil {
+		return fmt.Errorf("bad pattern: %w", err)
 	}
-
 	lineScanner := bufio.NewScanner(r)
 	for lineScanner.Scan() {
 		line := lineScanner.Text()
@@ -44,50 +45,50 @@ func Grep(r io.Reader, w io.Writer, pattern string) (err error) {
 			return fmt.Errorf("reading standard input: %v", err)
 		}
 		for _, word := range strings.Fields(line) {
-			ipnet := parseIPNet(word)
-			if ipnet != nil && (p.Contains(ipnet.IP) || ipnet.Contains(p.IP)) {
+			ipp, err := parseIPPrefix(word)
+			if err != nil {
+				continue
+			}
+			if searchPrefix.Contains(ipp.IP) || ipp.Contains(searchPrefix.IP) {
 				fmt.Fprintln(w, line)
-				break
+				break // next line
 			}
 		}
 	}
-	return
+	return nil
 }
 
-func parseIPNet(word string) (ipnet *net.IPNet) {
-	ipnet = &net.IPNet{}
-	parts := strings.FieldsFunc(word, func(c rune) bool { return c == '/' || c == 'm' })
-	if len(parts) == 0 || len(parts) > 2 {
-		return nil
-	}
-	if ipnet.IP = net.ParseIP(parts[0]); ipnet.IP == nil {
-		return nil
-	}
+const (
+	acceptMForMask      = true
+	acceptLegacyNetmask = true
+)
 
-	ipv4 := false
-	if ipnet.IP.To4() != nil {
-		ipv4 = true
-		ipnet.Mask = net.CIDRMask(32, 32)
-	} else if ipnet.IP.To16() != nil {
-		ipnet.Mask = net.CIDRMask(128, 128)
-	} else {
-		return nil
+func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
+	if acceptMForMask {
+		s = strings.Replace(s, "m", "/", 1)
 	}
-
-	if len(parts) == 2 {
-		ipnet.Mask = parseMask(parts[1], ipv4)
-	}
-	return
-}
-
-func parseMask(mask string, ipv4 bool) net.IPMask {
-	prefixLen, err := strconv.Atoi(mask)
-	if err == nil {
-		if ipv4 {
-			return net.CIDRMask(prefixLen, 32)
+	if acceptLegacyNetmask {
+		pos := strings.Index(s, "/")
+		if pos > 0 {
+			mask, err := netaddr.ParseIP(s[pos+1:])
+			if err == nil {
+				maskBytes := mask.As4()
+				bitLen := bits.OnesCount32(binary.BigEndian.Uint32(maskBytes[:]))
+				s = fmt.Sprintf("%s%d", s[:pos+1], bitLen)
+			}
 		}
-		return net.CIDRMask(prefixLen, 128)
-
 	}
-	return net.IPMask(net.ParseIP(mask))
+
+	prefix, err = netaddr.ParseIPPrefix(s)
+	if err != nil {
+		// Search pattern is a single IP (convert to single IP CIDR)
+		var ip netaddr.IP
+		ip, err = netaddr.ParseIP(s)
+		if err != nil {
+			return prefix, err
+		}
+		// Ignore error: Prefix of BitLen cannot be too large.
+		prefix, _ = ip.Prefix(ip.BitLen())
+	}
+	return prefix, nil
 }
