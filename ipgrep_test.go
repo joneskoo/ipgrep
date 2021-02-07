@@ -100,6 +100,24 @@ func TestIpgrep(t *testing.T) {
 			want:    "",
 		},
 		{
+			name:    "match IPv4 m netmask with specific IPv4",
+			pattern: "1.2.3.4",
+			input:   "1.2.3.4m255.255.255.0\n",
+			want:    "1.2.3.4m255.255.255.0\n",
+		},
+		{
+			name:    "match IPv4 m netmask with IPv4 in prefix",
+			pattern: "1.2.3.4",
+			input:   "1.2.3.0m255.255.255.0\n",
+			want:    "1.2.3.0m255.255.255.0\n",
+		},
+		{
+			name:    "match IPv4 slash netmask with IPv4 in prefix",
+			pattern: "1.2.3.4",
+			input:   "1.2.3.0/255.255.255.0\n",
+			want:    "1.2.3.0/255.255.255.0\n",
+		},
+		{
 			name:    "match IPv6 with IPv6",
 			pattern: "2001:db8::1",
 			input:   "2001:db8::1\n",
