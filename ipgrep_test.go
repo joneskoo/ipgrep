@@ -95,30 +95,6 @@ func TestIpgrep(t *testing.T) {
 			want:    "",
 		},
 		{
-			name:    "no match IPv4 m netmask with specific IPv4",
-			pattern: "1.2.2.4",
-			input:   "1.2.3.4m255.255.255.0\n",
-			want:    "",
-		},
-		{
-			name:    "match IPv4 m netmask with specific IPv4",
-			pattern: "1.2.3.4",
-			input:   "1.2.3.4m255.255.255.0\n",
-			want:    "1.2.3.4m255.255.255.0\n",
-		},
-		{
-			name:    "match IPv4 m netmask with IPv4 in prefix",
-			pattern: "1.2.3.4",
-			input:   "1.2.3.0m255.255.255.0\n",
-			want:    "1.2.3.0m255.255.255.0\n",
-		},
-		{
-			name:    "match IPv4 slash netmask with IPv4 in prefix",
-			pattern: "1.2.3.4",
-			input:   "1.2.3.0/255.255.255.0\n",
-			want:    "1.2.3.0/255.255.255.0\n",
-		},
-		{
 			name:    "match IPv6 with IPv6",
 			pattern: "2001:db8::1",
 			input:   "2001:db8::1\n",
@@ -141,18 +117,6 @@ func TestIpgrep(t *testing.T) {
 			name:    "no match IPv4 CIDR with specific IPv4",
 			pattern: "1.2.3.4",
 			input:   "1.2.2.4/24\n",
-			want:    "",
-		},
-		{
-			name:    "no match IPv4 m CIDR with specific IPv4",
-			pattern: "1.2.2.4",
-			input:   "1.2.3.4m24\n",
-			want:    "",
-		},
-		{
-			name:    "no match IPv4 m netmask with specific IPv4",
-			pattern: "1.2.2.4",
-			input:   "1.2.3.4m255.255.255.0\n",
 			want:    "",
 		},
 		{
@@ -181,21 +145,6 @@ func TestIpgrep(t *testing.T) {
 				t.Errorf("wanted Grep(%q) to write %q, got %q", c.input, c.want, got)
 			}
 		})
-	}
-}
-
-func BenchmarkGrepMMask(b *testing.B) {
-	b.ReportAllocs()
-	input, err := ioutil.ReadFile("README.md")
-	if err != nil {
-		b.Errorf("Failed to read README.md: %v", err)
-	}
-	for i := 0; i < b.N; i++ {
-		br := bytes.NewReader(input)
-		err := ipgrep.Grep(br, ioutil.Discard, "1.2.3.4m255.255.255.0")
-		if err != nil {
-			b.Errorf("Grep failed unexpectedly: %v", err)
-		}
 	}
 }
 
