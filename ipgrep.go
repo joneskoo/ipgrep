@@ -52,7 +52,7 @@ func Grep(r io.Reader, w io.Writer, search string) error {
 			if err != nil {
 				continue
 			}
-			if searchPrefix.Contains(ipp.IP) || ipp.Contains(searchPrefix.IP) {
+			if searchPrefix.Contains(ipp.IP()) || ipp.Contains(searchPrefix.IP()) {
 				fmt.Fprintln(w, line)
 				break // next line
 			}
@@ -98,7 +98,7 @@ func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
 
 	// s is a single IP (convert to single IP CIDR)
 	if i == len(s) {
-		return netaddr.IPPrefix{IP: ip, Bits: ip.BitLen()}, nil
+		return netaddr.IPPrefixFrom(ip, ip.BitLen()), nil
 	}
 
 	s = s[i+1:]
