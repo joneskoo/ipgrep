@@ -22,7 +22,8 @@ package ipgrep_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -210,13 +211,13 @@ func TestIpgrep(t *testing.T) {
 
 func BenchmarkGrepMMask(b *testing.B) {
 	b.ReportAllocs()
-	input, err := ioutil.ReadFile("README.md")
+	input, err := os.ReadFile("README.md")
 	if err != nil {
 		b.Errorf("Failed to read README.md: %v", err)
 	}
 	for i := 0; i < b.N; i++ {
 		br := bytes.NewReader(input)
-		err := ipgrep.Grep(br, ioutil.Discard, "1.2.3.4m255.255.255.0")
+		err := ipgrep.Grep(br, io.Discard, "1.2.3.4m255.255.255.0")
 		if err != nil {
 			b.Errorf("Grep failed unexpectedly: %v", err)
 		}
@@ -225,13 +226,13 @@ func BenchmarkGrepMMask(b *testing.B) {
 
 func BenchmarkGrepCIDR(b *testing.B) {
 	b.ReportAllocs()
-	input, err := ioutil.ReadFile("README.md")
+	input, err := os.ReadFile("README.md")
 	if err != nil {
 		b.Errorf("Failed to read README.md: %v", err)
 	}
 	for i := 0; i < b.N; i++ {
 		br := bytes.NewReader(input)
-		err := ipgrep.Grep(br, ioutil.Discard, "1.2.3.4/24")
+		err := ipgrep.Grep(br, io.Discard, "1.2.3.4/24")
 		if err != nil {
 			b.Errorf("Grep failed unexpectedly: %v", err)
 		}
@@ -240,13 +241,13 @@ func BenchmarkGrepCIDR(b *testing.B) {
 
 func BenchmarkGrepIP(b *testing.B) {
 	b.ReportAllocs()
-	input, err := ioutil.ReadFile("README.md")
+	input, err := os.ReadFile("README.md")
 	if err != nil {
 		b.Errorf("Failed to read README.md: %v", err)
 	}
 	for i := 0; i < b.N; i++ {
 		br := bytes.NewReader(input)
-		err := ipgrep.Grep(br, ioutil.Discard, "1.2.3.4")
+		err := ipgrep.Grep(br, io.Discard, "1.2.3.4")
 		if err != nil {
 			b.Errorf("Grep failed unexpectedly: %v", err)
 		}
