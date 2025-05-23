@@ -1,0 +1,35 @@
+version: 2
+
+builds:
+  - id: ipgrep
+    main: ./cmd/ipgrep
+    binary: ipgrep
+    buildmode: pie
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - arm64
+      - amd64
+
+archives:
+  - id: ipgrep
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^Github:'
+      - '^dev:'
+      - '^README:'
+      - '^chore:'
