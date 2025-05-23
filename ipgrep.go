@@ -30,7 +30,7 @@ import (
 	"strings"
 	"unicode"
 
-	"inet.af/netaddr"
+	"net/netip"
 )
 
 // Grep finds IP addresses matching pattern
@@ -52,7 +52,7 @@ func Grep(r io.Reader, w io.Writer, search string) error {
 			if err != nil {
 				continue
 			}
-			if searchPrefix.Contains(ipp.IP()) || ipp.Contains(searchPrefix.IP()) {
+			if searchPrefix.Contains(ipp.Addr()) || ipp.Contains(searchPrefix.Addr()) {
 				fmt.Fprintln(w, line)
 				break // next line
 			}
@@ -73,7 +73,7 @@ const (
 	acceptLegacyNetmask = true
 )
 
-func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
+func parseIPPrefix(s string) (prefix netip.Prefix, err error) {
 	is := strings.IndexByte(s, '/')
 	im := -1
 	if acceptMForMask {
@@ -91,35 +91,34 @@ func parseIPPrefix(s string) (prefix netaddr.IPPrefix, err error) {
 	}
 
 	// Parse IP part of the prefix
-	ip, err := netaddr.ParseIP(s[:i])
+	ip, err := netip.ParseAddr(s[:i])
 	if err != nil {
-		return netaddr.IPPrefix{}, err
+		return netip.Prefix{}, err
 	}
 
 	// s is a single IP (convert to single IP CIDR)
 	if i == len(s) {
-		return netaddr.IPPrefixFrom(ip, ip.BitLen()), nil
+		return netip.PrefixFrom(ip, ip.BitLen()), nil
 	}
 
 	s = s[i+1:]
 	prefixLen, err := strconv.Atoi(s)
 	if prefixLen < 0 || prefixLen > 128 {
-		return netaddr.IPPrefix{}, fmt.Errorf("bad prefix length %q: %v", s, err)
+		return netip.Prefix{}, fmt.Errorf("bad prefix length %q: %v", s, err)
 	}
 	if err != nil {
 		if !acceptLegacyNetmask || !ip.Is4() {
-			return netaddr.IPPrefix{}, fmt.Errorf("bad prefix %q: %v", s, err)
+			return netip.Prefix{}, fmt.Errorf("bad prefix %q: %v", s, err)
 		}
-		mask, err := netaddr.ParseIP(s)
+		mask, err := netip.ParseAddr(s)
 		if !mask.Is4() {
-			return netaddr.IPPrefix{}, fmt.Errorf("bad netmask %q", s)
+			return netip.Prefix{}, fmt.Errorf("bad netmask %q", s)
 		}
 		if err != nil {
-			return netaddr.IPPrefix{}, err
+			return netip.Prefix{}, err
 		}
 		maskBytes := mask.As4()
 		prefixLen = bits.OnesCount32(binary.BigEndian.Uint32(maskBytes[:]))
-
 	}
-	return ip.Prefix(uint8(prefixLen))
+	return netip.PrefixFrom(ip, prefixLen), nil
 }
